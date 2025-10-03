@@ -40,7 +40,7 @@ jobs:
 
       - name: "Validar Coverage"
         if: ${{ steps.coverage.outputs.coverage < env.COVERAGE_MIN }}
-        run: | 
+        run: |
           echo "cobertura minina nao atendida" exit 1
 
   generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
