@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: "Exec node test"
-        run: npm tests
+        run: npm run tests
 
       - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
         id: coverage
@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "cobertura minina nao atendida" exit 1
 
-  generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
+  generate-certificate:
     name: "Desafio Nível 2 - Certificado"
     runs-on: ubuntu-latest
     needs: tests-and-coverage
