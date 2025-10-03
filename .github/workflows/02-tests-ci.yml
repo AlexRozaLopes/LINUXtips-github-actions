@@ -1,7 +1,11 @@
 name: "Nível 2: Testes Automatizados"
 on:
+  push:
+    branches:
+      - "**"
   pull_request:
-    branches: [ main ]
+    branches:
+      - "**"
 
 env:
   NODE_VERSION: '18'
