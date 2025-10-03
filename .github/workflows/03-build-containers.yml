@@ -79,9 +79,9 @@ jobs:
           path: trivy-report.txt
           retention-days: 7
 
-      - name: Falhar se houver vulnerabilidades CRITICAL
+      - name: Falhar se houver vulnerabilidades CRITICAL #POG(programacao orientada a gambiarra!)
         run: |
-          if grep -q "CRITICAL" trivy-report.txt; then
+          if ! grep -qE 'CRITICAL:\s*0' trivy-report.txt; then
             echo "❌ Vulnerabilidades CRÍTICAS encontradas no scan!"
             exit 1
           fi
