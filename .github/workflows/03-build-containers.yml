@@ -17,11 +17,81 @@ env:
 jobs:
   build-scan-and-push:
     name: "Build, Lint, Trivy Scan e Push no GHCR"
-    if: #????
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
-      # AQUI VAI O CÓDIGO DO DESAFIO :)
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Login no GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Montar nome da imagem em lowercase
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=$(echo "${{ vars.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="${{ env.REGISTRY }}/${OWNER}/${IMAGE}:${{ github.sha }}"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo ">> Nome da imagem: $IMAGE_NAME"
+
+      - name: Build da imagem Docker (sem push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}
+
+      - name: Lint do Dockerfile com Hadolint
+        run: |
+          docker run --rm -i hadolint/hadolint < Dockerfile > lint-report.txt || true
+          cat lint-report.txt
+          if grep -qE 'DL3006|DL3008' lint-report.txt; then
+            echo "❌ Erro: Foram encontrados problemas bloqueadores no Dockerfile (DL3006/DL3008)."
+            exit 1
+          fi
+        continue-on-error: false
+
+      - name: Upload do relatório de Lint
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: lint-report.txt
+          retention-days: 7
+
+      - name: Scan de vulnerabilidades com Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          output: trivy-report.txt
+
+      - name: Upload do relatório Trivy
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.txt
+          retention-days: 7
+
+      - name: Falhar se houver vulnerabilidades CRITICAL
+        run: |
+          if grep -q "CRITICAL" trivy-report.txt; then
+            echo "❌ Vulnerabilidades CRÍTICAS encontradas no scan!"
+            exit 1
+          fi
+
+      - name: Push da imagem para o GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}
 
   generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
     name: "Desafio Nível 3 - Certificado"
