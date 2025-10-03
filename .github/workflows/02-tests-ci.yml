@@ -20,10 +20,16 @@ jobs:
       - name: "Checkout do código"
         uses: actions/checkout@v4
 
-      # INSIRA AQUI A LÓGICA PARA RODAR OS TESTES E VERIFICAR A COBERTURA
-      ###
-      ###
-      ###
+      - name: "Setup node"
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: "Install node dep"
+        run: npm ci
+
+      - name: "Exec node test"
+        run: npm tests
 
       - name: "Extrair porcentagem de cobertura" # Esse step será validado pelo desafio, não altere o nome. No final, ele deve gerar o output "coverage" com a porcentagem de cobertura.
         id: coverage
@@ -32,47 +38,52 @@ jobs:
           echo "Coverage: $COVERAGE%"
           echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
 
+      - name: "Validar Coverage"
+        if: ${{ steps.coverage.outputs.coverage < env.COVERAGE_MIN }}
+        run: | 
+          echo "cobertura minina nao atendida" exit 1
+
   generate-certificate: # DAQUI PARA BAIXO, NÃO ALTERAR
-      name: "Desafio Nível 2 - Certificado"
-      runs-on: ubuntu-latest
-      needs: tests-and-coverage
-      if: success() && needs.tests-and-coverage.outputs.coverage != ''
+    name: "Desafio Nível 2 - Certificado"
+    runs-on: ubuntu-latest
+    needs: tests-and-coverage
+    if: success() && needs.tests-and-coverage.outputs.coverage != ''
 
-      steps:
-        - name: "Gerar certificado"
-          run: |
-            mkdir -p certificates
-            cat > certificates/level-2-certificate.md << EOF
-            # Certificado de Conclusão - Nível 2
+    steps:
+      - name: "Gerar certificado"
+        run: |
+          mkdir -p certificates
+          cat > certificates/level-2-certificate.md << EOF
+          # Certificado de Conclusão - Nível 2
+          
+          **Descomplicando Github Actions - GitHub Actions Edition**
+          ---
+          
+          Este certificado atesta que **${{ github.actor }}** concluiu com sucesso:
+          ## Nível 2: Testes Automatizados
+          
+          **Competências desenvolvidas:**
+          - Automação de testes
+          - Análise de cobertura
+          - Lógica de validação com coverage mínimo
+          - Upload de artefatos
+          
+          **Cobertura:** >= ${{ env.COVERAGE_MIN }}%
+          **Data de conclusão:** $(date)
+          **Repositório:** ${{ github.repository }}
+          **Workflow:** ${{ github.run_id }}
+          
+          ---
+          **Badge conquistado:** Testes Automatizados
+          
+          ---
+          *Certificado gerado automaticamente pelo GitHub Actions*
+          *LINUXtips*
+          EOF
 
-            **Descomplicando Github Actions - GitHub Actions Edition**
-            ---
-
-            Este certificado atesta que **${{ github.actor }}** concluiu com sucesso:
-            ## Nível 2: Testes Automatizados
-
-            **Competências desenvolvidas:**
-            - Automação de testes
-            - Análise de cobertura
-            - Lógica de validação com coverage mínimo
-            - Upload de artefatos
-
-            **Cobertura:** >= ${{ env.COVERAGE_MIN }}%
-            **Data de conclusão:** $(date)
-            **Repositório:** ${{ github.repository }}
-            **Workflow:** ${{ github.run_id }}
-
-            ---
-            **Badge conquistado:** Testes Automatizados
-
-            ---
-            *Certificado gerado automaticamente pelo GitHub Actions*
-            *LINUXtips*
-            EOF
-
-        - name: "Upload do certificado"
-          uses: actions/upload-artifact@v4
-          with:
-            name: level-2-certificate
-            path: certificates/
-            retention-days: 30
+      - name: "Upload do certificado"
+        uses: actions/upload-artifact@v4
+        with:
+          name: level-2-certificate
+          path: certificates/
+          retention-days: 30
